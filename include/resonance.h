@@ -1,14 +1,14 @@
 #ifndef RESONANCE_LIBRARY_H
 #define RESONANCE_LIBRARY_H
 
-#if defined(_WIN32) || defined(_WIN64)
-  #ifdef RESONANCE_EXPORTS
-    #define RESONANCE_API __declspec(dllexport)
-  #else
-    #define RESONANCE_API __declspec(dllimport)
-  #endif
+#if defined(_MSC_VER) || defined(__MINGW32__)
+    #ifdef RESONANCE_EXPORTS
+        #define RESONANCE_API __declspec(dllexport)
+    #else
+        #define RESONANCE_API __declspec(dllimport)
+    #endif
 #else
-  #define RESONANCE_API
+    #define RESONANCE_API __attribute__((visibility("default")))
 #endif
 
 #include <cstdint>

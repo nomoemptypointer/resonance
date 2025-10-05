@@ -14,7 +14,7 @@ add_library(resonance STATIC
 #        test/main.cpp
 #)
 
-target_link_libraries(test_app PRIVATE resonance)
+#target_link_libraries(test_app PRIVATE resonance)
 
 find_package(PkgConfig REQUIRED)
 #pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
