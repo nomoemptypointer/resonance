@@ -10,6 +10,27 @@ add_library(resonance SHARED
         src/resonance.cpp
 )
 
+# Compiler and linker optimizations for size
+if(MINGW OR UNIX)
+    message(STATUS "Applying size optimizations for library")
+
+    # Optimize for size, remove unused code sections
+    target_compile_options(resonance PRIVATE
+            -Os
+            # -O1 → basic optimization
+            # -O2 → good general optimization
+            # -O3 → aggressive optimization (may increase code size in some cases)
+            # -Os → optimize for size (usually the best for DLLs)
+            -ffunction-sections
+            -fdata-sections
+    )
+
+    # Linker flags to remove unused sections
+    set_target_properties(resonance PROPERTIES
+            LINK_FLAGS "-Wl,--gc-sections -flto"
+    )
+endif()
+
 #add_executable(test_app
 #        test/main.cpp
 #)
