@@ -2,8 +2,7 @@
 
 #include <iostream>
 #include <vector>
-#include <cmath>
-#include <cstddef>
+#include <memory>
 
 static bool g_running = false;
 static uint32_t g_sampleRate = 48000;
@@ -12,9 +11,9 @@ static float g_phase = 0.0f;
 struct MixerTrack {
     bool active = true;
     float volume = 1.0f;
-    float* buffer = nullptr;   // audio stream
-    size_t bufferSize = 0;     // size of buffer
-    size_t readPos = 0;        // current playback position
+    float* buffer;
+    size_t bufferSize;
+    size_t readPos = 0;
 };
 
 static std::vector<MixerTrack> g_tracks;
@@ -26,8 +25,7 @@ extern "C" {
         g_sampleRate = sampleRate;
         g_running = true;
 
-        // Initialize a single track for testing
-        g_tracks.push_back({true, 0.5f});
+        g_tracks.push_back({true, 1.0f});
 
         std::cout << "[Resonance] Audio engine initialized.\n";
     }

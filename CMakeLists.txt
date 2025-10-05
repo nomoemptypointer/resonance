@@ -8,7 +8,11 @@ include_directories(include)
 
 add_library(resonance SHARED
         src/resonance.cpp
+        src/wavfile.cpp
+        src/wavfile.h
 )
+
+target_compile_definitions(resonance PRIVATE RESONANCE_EXPORTS)
 
 # Compiler and linker optimizations for size
 if(MINGW OR UNIX)
@@ -23,11 +27,6 @@ if(MINGW OR UNIX)
             # -Os → optimize for size (usually the best for DLLs)
             -ffunction-sections
             -fdata-sections
-    )
-
-    # Linker flags to remove unused sections
-    set_target_properties(resonance PROPERTIES
-            LINK_FLAGS "-Wl,--gc-sections -flto"
     )
 endif()
 
