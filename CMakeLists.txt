@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(include)
 
-add_library(resonance STATIC
+add_library(resonance SHARED
         src/resonance.cpp
 )
 
