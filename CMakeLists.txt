@@ -7,15 +7,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include_directories(include)
 
 add_library(resonance SHARED
-        src/resonance.cpp
-        src/wavfile.cpp
-        src/wavfile.h
+        src/Resonance.cpp
+        src/AudioStream.h
+        include/Types.h
 )
 
 target_compile_definitions(resonance PRIVATE RESONANCE_EXPORTS)
 
 # Compiler and linker optimizations for size
-if(MINGW OR UNIX)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     message(STATUS "Applying size optimizations for library")
 
     # Optimize for size, remove unused code sections
@@ -28,6 +28,8 @@ if(MINGW OR UNIX)
             -ffunction-sections
             -fdata-sections
     )
+else()
+    message(FATAL_ERROR "Resonance can only be built with GCC or MinGW.")
 endif()
 
 #add_executable(test_app
