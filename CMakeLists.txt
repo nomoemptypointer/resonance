@@ -33,22 +33,25 @@ else()
     message(FATAL_ERROR "Resonance can only be built with GCC or MinGW.")
 endif()
 
-#add_executable(test_app
-#        test/main.cpp
-#)
+CPMAddPackage(
+        NAME SDL3
+        GITHUB_REPOSITORY libsdl-org/SDL
+        GIT_TAG release-3.2.0 # stable release
+        OPTIONS
+        "SDL_TEST OFF"
+        "SDL_STATIC ON"
+        "SDL_SHARED ON"
+)
 
-#target_link_libraries(test_app PRIVATE resonance)
+add_executable(test_app
+        test/main.cpp
+)
 
-find_package(PkgConfig REQUIRED)
-#pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
-#if(PORTAUDIO_FOUND)
-#    target_include_directories(test_app PRIVATE ${PORTAUDIO_INCLUDE_DIRS})
-#    target_link_libraries(test_app PRIVATE ${PORTAUDIO_LIBRARIES})
-#endif()
+target_link_libraries(test_app PRIVATE
+        resonance
+        SDL3::SDL3
+)
 
-# Add a "run_test" custom target
-#add_custom_target(run_test
-#        COMMAND test_app
-#        DEPENDS test_app
-#        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-#)
+if(MINGW)
+    target_link_options(test_app PRIVATE -static-libgcc -static-libstdc++)
+endif()
