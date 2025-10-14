@@ -9,8 +9,8 @@ include_directories(include)
 
 add_library(resonance SHARED
         src/Resonance.cpp
-        src/AudioStream.h
-        include/Types.h
+        src/Sound.cpp
+        include/internal/macros.h
 )
 
 target_compile_definitions(resonance PRIVATE RESONANCE_EXPORTS)

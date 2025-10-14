@@ -5,21 +5,17 @@
 #include <cstddef>
 
 #include "Types.h"
-
-#if defined(_MSC_VER) || defined(__MINGW32__)
-    #ifdef RESONANCE_EXPORTS
-        #define RESONANCE_API __declspec(dllexport)
-    #else
-        #define RESONANCE_API __declspec(dllimport)
-    #endif
-#else
-    #define RESONANCE_API __attribute__((visibility("default")))
-#endif
+#include "Sound.h"
+#include "internal/import.h"
 
 namespace Resonance {
-    RESONANCE_API void Initialize(uint32_t sampleRate);
+    RESONANCE_API void Initialize(uint32_t sampleRate, StartupFlags startupFlags);
     RESONANCE_API void Shutdown();
     RESONANCE_API void Update(Sample* buffer, size_t frames);
+    RESONANCE_API void SetMasterVolume(float volume);
+    RESONANCE_API float GetMasterVolume();
+    RESONANCE_API void RegisterSound(Sound* s);
+    RESONANCE_API void UnregisterSound(Sound* s);
 }
 
 #endif
