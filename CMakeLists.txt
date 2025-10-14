@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 project(resonance LANGUAGES CXX)
+include(cmake/CPM.cmake)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
