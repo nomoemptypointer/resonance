@@ -1,3 +1,4 @@
+#include <chrono>
 #include <SDL3/SDL.h>
 #include <iostream>
 #include <vector>
@@ -60,9 +61,9 @@ int main() {
 
     SDL_ResumeAudioStreamDevice(stream);
 
-    std::ifstream file("c5.pcm", std::ios::binary | std::ios::ate);
+    std::ifstream file("pluckStereo.pcm", std::ios::binary | std::ios::ate);
     if (!file) {
-        std::cerr << "Failed to open c5.pcm\n";
+        std::cerr << "Failed to open pcm\n";
         return 1;
     }
 
@@ -79,7 +80,7 @@ int main() {
 
     Resonance::Sound sound;
     // Pass raw int16_t data directly
-    if (!sound.LoadFromMemory(buffer.data(), buffer.size() * sizeof(int16_t), 1, 48000)) {
+    if (!sound.LoadFromMemory(buffer.data(), buffer.size() * sizeof(int16_t), 2, 48000)) {
         std::cerr << "Failed to load sound\n";
         return 1;
     }
@@ -89,11 +90,26 @@ int main() {
 
     std::cout << "Press Ctrl+C to stop.\n";
 
-    while (running) {
-        sound.Play();
-        SDL_Delay(1);
-    }
+    auto lastTime = std::chrono::high_resolution_clock::now();
+    constexpr double targetFrameTimeMs = 1.0; // your SDL_Delay(1) target
 
+    while (running) {
+        auto now = std::chrono::high_resolution_clock::now();
+        double deltaMs = std::chrono::duration<double, std::milli>(now - lastTime).count();
+        lastTime = now;
+
+        // Play multiple voices
+        sound.Play();
+
+        std::cout << "\rVoice count: " << Resonance::GetCurrentVoiceCount() << std::flush;
+
+        // Check if loop is taking too long
+        if (deltaMs > targetFrameTimeMs * 2) { // arbitrary tolerance
+            std::cerr << "\nWarning: main loop running slow! delta = " << deltaMs << " ms\n";
+        }
+
+        SDL_Delay(1); // small sleep to prevent CPU hog
+    }
     std::cout << "\nStopping audio...\n";
 
     Resonance::Shutdown();

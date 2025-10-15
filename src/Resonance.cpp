@@ -5,6 +5,7 @@
 #include <memory>
 #include <mutex>
 #include <algorithm>
+#include <immintrin.h>
 
 namespace Resonance {
     static bool g_running = false;
@@ -18,6 +19,7 @@ namespace Resonance {
         float volume;       // Instance-specific volume
         float pan;          // Instance-specific pan
         bool isPlaying;     // Is this instance active?
+        float pitch;        // Pitch factor
     };
 
     static std::vector<SoundInstance> g_activeInstances;
@@ -43,75 +45,59 @@ namespace Resonance {
     }
 
     void Update(Sample* buffer, size_t frames) {
-        if (!g_running)
-            return;
+        if (!g_running) return;
 
         std::lock_guard<std::mutex> lock(g_mutex);
+        std::fill_n(buffer, frames * g_channels, 0.0f);
 
-        for (size_t i = 0; i < frames; i++) {
-            float left = 0.0f;
-            float right = 0.0f;
+        for (auto& instance : g_activeInstances) {
+            if (!instance.isPlaying) continue;
 
-            for (auto& instance : g_activeInstances) {
-                if (!instance.isPlaying)
-                    continue;
+            Sound* s = instance.sound;
+            uint32_t channels = s->GetChannels();
+            uint32_t length = s->GetLength();
+            uint32_t pos = instance.position;
 
-                Sound* s = instance.sound;
-                uint32_t pos = instance.position;
-                uint32_t channels = s->GetChannels();
-                uint32_t length = s->GetLength();
+            // Precompute gains
+            float pan = instance.pan;
+            float lGain = instance.volume * ((pan <= 0) ? 1.0f : 1.0f - pan);
+            float rGain = instance.volume * ((pan >= 0) ? 1.0f : 1.0f + pan);
 
-                // Stop instance if finished
-                if (pos >= length) {
-                    instance.isPlaying = false;
-                    continue;
-                }
-
-                // Fetch samples
-                float sampleL = 0.0f;
-                float sampleR = 0.0f;
+            for (size_t i = 0; i < frames && pos < length; i++, pos++) {
+                float sampleL, sampleR;
 
                 if (channels == 1) {
                     float sample = s->m_buffer[pos];
                     sampleL = sampleR = sample;
-                } else if (channels >= 2) {
-                    sampleL = s->m_buffer[pos * channels + 0];
-                    sampleR = s->m_buffer[pos * channels + 1];
+                } else {
+                    float* ptr = s->m_buffer.data() + pos * channels;
+                    sampleL = ptr[0];
+                    sampleR = ptr[1];
                 }
 
-                // Apply instance volume
-                sampleL *= instance.volume;
-                sampleR *= instance.volume;
-
-                // Apply instance pan
-                float pan = instance.pan;
-                float lGain = (pan <= 0) ? 1.0f : 1.0f - pan;
-                float rGain = (pan >= 0) ? 1.0f : 1.0f + pan;
-
-                left  += sampleL * lGain;
-                right += sampleR * rGain;
-
-                instance.position++;
+                if (g_channels == 2) {
+                    buffer[i * 2 + 0] += sampleL * lGain;
+                    buffer[i * 2 + 1] += sampleR * rGain;
+                } else {
+                    buffer[i] += 0.5f * (sampleL * lGain + sampleR * rGain);
+                }
             }
 
-            // Clamp and apply master volume
-            left  = Clamp(left * g_volume, -1.0f, 1.0f);
-            right = Clamp(right * g_volume, -1.0f, 1.0f);
-
-            if (g_channels == 2) {
-                buffer[i * 2 + 0] = left;
-                buffer[i * 2 + 1] = right;
-            } else {
-                buffer[i] = (left + right) * 0.5f;
-            }
+            instance.position = pos;
+            if (pos >= length)
+                instance.isPlaying = false;
         }
 
-        // Remove finished instances
-        g_activeInstances.erase(
-            std::remove_if(g_activeInstances.begin(), g_activeInstances.end(),
-                           [](const SoundInstance& inst) { return !inst.isPlaying; }),
-            g_activeInstances.end()
-        );
+        // Apply master volume and clamp
+        if (g_channels == 2) {
+            for (size_t i = 0; i < frames * 2; i++) {
+                buffer[i] = Clamp(buffer[i] * g_volume, -1.0f, 1.0f);
+            }
+        } else {
+            for (size_t i = 0; i < frames; i++) {
+                buffer[i] = Clamp(buffer[i] * g_volume, -1.0f, 1.0f);
+            }
+        }
     }
 
     void SetMasterVolume(float volume) {
@@ -121,6 +107,10 @@ namespace Resonance {
 
     float GetMasterVolume() {
         return g_volume;
+    }
+
+    size_t GetCurrentVoiceCount() {
+        return g_activeInstances.size();
     }
 
     void PlaySound(Sound* s) {

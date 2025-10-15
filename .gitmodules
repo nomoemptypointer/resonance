@@ -1,0 +1,3 @@
+[submodule "simdwrap"]
+	path = simdwrap
+	url = https://github.com/nomoemptypointer/simdwrap

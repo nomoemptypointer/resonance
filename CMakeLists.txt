@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 project(resonance LANGUAGES CXX)
 include(cmake/CPM.cmake)
+add_subdirectory(simdwrap)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,6 +11,11 @@ include_directories(include)
 add_library(resonance SHARED
         src/Resonance.cpp
         src/Sound.cpp
+)
+target_link_libraries(resonance PRIVATE simdwrap)
+target_include_directories(resonance PRIVATE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/simdwrap/include>
 )
 
 target_compile_definitions(resonance PRIVATE RESONANCE_EXPORTS)

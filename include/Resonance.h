@@ -14,6 +14,7 @@ namespace Resonance {
     RESONANCE_API void Update(Sample* buffer, size_t frames);
     RESONANCE_API void SetMasterVolume(float volume);
     RESONANCE_API float GetMasterVolume();
+    RESONANCE_API size_t GetCurrentVoiceCount();
     RESONANCE_API void PlaySound(Sound* s);
 }
 
