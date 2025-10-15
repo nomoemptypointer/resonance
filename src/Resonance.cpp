@@ -5,13 +5,13 @@
 #include <memory>
 #include <mutex>
 #include <algorithm>
-#include <immintrin.h>
 
 namespace Resonance {
     static bool g_running = false;
     static uint32_t g_sampleRate = 48000;
     static uint8_t g_channels = 2;
     static float g_volume = 1;
+    static uint32_t g_concurrentSoundInstances = 4294967295; // Max value
 
     struct SoundInstance {
         Sound* sound;       // Reference to the original sound data
@@ -46,12 +46,17 @@ namespace Resonance {
 
     void Update(Sample* buffer, size_t frames) {
         if (!g_running) return;
-
+        size_t activeCount = 0;
         std::lock_guard<std::mutex> lock(g_mutex);
         std::fill_n(buffer, frames * g_channels, 0.0f);
 
         for (auto& instance : g_activeInstances) {
             if (!instance.isPlaying) continue;
+
+            if (activeCount >= g_concurrentSoundInstances) {
+                instance.isPlaying = false;
+                continue;
+            }
 
             Sound* s = instance.sound;
             uint32_t channels = s->GetChannels();
@@ -86,6 +91,8 @@ namespace Resonance {
             instance.position = pos;
             if (pos >= length)
                 instance.isPlaying = false;
+
+            activeCount++;
         }
 
         // Apply master volume and clamp
@@ -98,6 +105,11 @@ namespace Resonance {
                 buffer[i] = Clamp(buffer[i] * g_volume, -1.0f, 1.0f);
             }
         }
+        g_activeInstances.erase(
+            std::remove_if(g_activeInstances.begin(), g_activeInstances.end(),
+                           [](const SoundInstance& inst){ return !inst.isPlaying; }),
+            g_activeInstances.end()
+        );
     }
 
     void SetMasterVolume(float volume) {
@@ -109,8 +121,16 @@ namespace Resonance {
         return g_volume;
     }
 
-    size_t GetCurrentVoiceCount() {
+    size_t GetCurrentConcurrentSounds() {
         return g_activeInstances.size();
+    }
+
+    uint32_t GetMaxConcurrentSounds() {
+        return g_concurrentSoundInstances;
+    }
+
+    void SetMaxConcurrentSounds(uint32_t maxConcurrentSounds) {
+        g_concurrentSoundInstances = maxConcurrentSounds;
     }
 
     void PlaySound(Sound* s) {

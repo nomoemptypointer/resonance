@@ -85,8 +85,9 @@ int main() {
         return 1;
     }
 
-    sound.SetVolume(1.0f);
+    sound.SetVolume(0.1f);
     sound.SetPan(0.0f);
+    Resonance::SetMaxConcurrentSounds(500);
 
     std::cout << "Press Ctrl+C to stop.\n";
 
@@ -97,13 +98,9 @@ int main() {
         auto now = std::chrono::high_resolution_clock::now();
         double deltaMs = std::chrono::duration<double, std::milli>(now - lastTime).count();
         lastTime = now;
-
-        // Play multiple voices
         sound.Play();
 
-        std::cout << "\rVoice count: " << Resonance::GetCurrentVoiceCount() << std::flush;
-
-        // Check if loop is taking too long
+        std::cout << "\rVoice count: " << Resonance::GetCurrentConcurrentSounds() << std::flush;
         if (deltaMs > targetFrameTimeMs * 2) { // arbitrary tolerance
             std::cerr << "\nWarning: main loop running slow! delta = " << deltaMs << " ms\n";
         }
