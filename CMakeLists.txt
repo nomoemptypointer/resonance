@@ -10,27 +10,24 @@ include_directories(include)
 add_library(resonance SHARED
         src/Resonance.cpp
         src/Sound.cpp
-        include/internal/macros.h
 )
 
 target_compile_definitions(resonance PRIVATE RESONANCE_EXPORTS)
 
-# Compiler and linker optimizations for size
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    message(STATUS "Applying size optimizations for library")
+if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    message(FATAL_ERROR "Resonance can only be built with GCC or MinGW.")
+endif()
 
-    # Optimize for size, remove unused code sections
+# Apply size optimizations
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(STATUS "Applying size optimizations for library")
     target_compile_options(resonance PRIVATE
             -Os
-            # -O1 → basic optimization
-            # -O2 → good general optimization
-            # -O3 → aggressive optimization (may increase code size in some cases)
-            # -Os → optimize for size (usually the best for DLLs)
             -ffunction-sections
             -fdata-sections
     )
 else()
-    message(FATAL_ERROR "Resonance can only be built with GCC or MinGW.")
+    message(STATUS "Debug build: optimizations disabled")
 endif()
 
 CPMAddPackage(
