@@ -2,6 +2,8 @@
 #include <iostream>
 #include <cstring>
 
+#include "resonance.h"
+
 namespace Resonance {
     Sound::Sound(Sound&& other) noexcept {
         *this = std::move(other);
@@ -46,12 +48,7 @@ namespace Resonance {
     }
 
     bool Sound::Play() {
-        if (m_buffer.empty()) {
-            return false;
-        }
-
-        m_position = 0;
-        m_isPlaying = true;
+        Resonance::PlaySound(this);
         return true;
     }
 

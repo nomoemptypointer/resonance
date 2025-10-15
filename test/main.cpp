@@ -84,8 +84,6 @@ int main() {
         return 1;
     }
 
-    Resonance::RegisterSound(&sound);
-
     sound.SetVolume(1.0f);
     sound.SetPan(0.0f);
 
@@ -93,7 +91,7 @@ int main() {
 
     while (running) {
         sound.Play();
-        SDL_Delay(500);
+        SDL_Delay(1);
     }
 
     std::cout << "\nStopping audio...\n";

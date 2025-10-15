@@ -12,7 +12,15 @@ namespace Resonance {
     static uint8_t g_channels = 2;
     static float g_volume = 1;
 
-    static std::vector<Sound*> g_activeSounds;
+    struct SoundInstance {
+        Sound* sound;       // Reference to the original sound data
+        uint32_t position;  // Current playback position
+        float volume;       // Instance-specific volume
+        float pan;          // Instance-specific pan
+        bool isPlaying;     // Is this instance active?
+    };
+
+    static std::vector<SoundInstance> g_activeInstances;
     static std::mutex g_mutex;
 
     float Clamp(float v, float minVal, float maxVal) {
@@ -44,19 +52,22 @@ namespace Resonance {
             float left = 0.0f;
             float right = 0.0f;
 
-            for (auto* s : g_activeSounds) {
-                if (!s->IsPlaying())
+            for (auto& instance : g_activeInstances) {
+                if (!instance.isPlaying)
                     continue;
 
-                uint32_t pos = s->m_position;
+                Sound* s = instance.sound;
+                uint32_t pos = instance.position;
                 uint32_t channels = s->GetChannels();
                 uint32_t length = s->GetLength();
 
+                // Stop instance if finished
                 if (pos >= length) {
-                    s->Stop();
+                    instance.isPlaying = false;
                     continue;
                 }
 
+                // Fetch samples
                 float sampleL = 0.0f;
                 float sampleR = 0.0f;
 
@@ -68,19 +79,19 @@ namespace Resonance {
                     sampleR = s->m_buffer[pos * channels + 1];
                 }
 
-                // Apply volume
-                sampleL *= s->GetVolume();
-                sampleR *= s->GetVolume();
+                // Apply instance volume
+                sampleL *= instance.volume;
+                sampleR *= instance.volume;
 
-                // Apply panning (-1 = left, 0 = center, 1 = right)
-                float pan = s->GetPan();
+                // Apply instance pan
+                float pan = instance.pan;
                 float lGain = (pan <= 0) ? 1.0f : 1.0f - pan;
                 float rGain = (pan >= 0) ? 1.0f : 1.0f + pan;
 
                 left  += sampleL * lGain;
                 right += sampleR * rGain;
 
-                s->m_position++;
+                instance.position++;
             }
 
             // Clamp and apply master volume
@@ -90,10 +101,17 @@ namespace Resonance {
             if (g_channels == 2) {
                 buffer[i * 2 + 0] = left;
                 buffer[i * 2 + 1] = right;
-            } else { // mono output
+            } else {
                 buffer[i] = (left + right) * 0.5f;
             }
         }
+
+        // Remove finished instances
+        g_activeInstances.erase(
+            std::remove_if(g_activeInstances.begin(), g_activeInstances.end(),
+                           [](const SoundInstance& inst) { return !inst.isPlaying; }),
+            g_activeInstances.end()
+        );
     }
 
     void SetMasterVolume(float volume) {
@@ -105,16 +123,19 @@ namespace Resonance {
         return g_volume;
     }
 
-    void RegisterSound(Sound* s) {
-        std::lock_guard<std::mutex> lock(g_mutex);
-        g_activeSounds.push_back(s);
-    }
+    void PlaySound(Sound* s) {
+        if (!s || s->m_buffer.empty())
+            return;
 
-    void UnregisterSound(Sound* s) {
         std::lock_guard<std::mutex> lock(g_mutex);
-        g_activeSounds.erase(
-            std::remove(g_activeSounds.begin(), g_activeSounds.end(), s),
-            g_activeSounds.end()
-        );
+
+        SoundInstance instance{};
+        instance.sound = s;
+        instance.position = 0;
+        instance.volume = s->GetVolume();
+        instance.pan = s->GetPan();
+        instance.isPlaying = true;
+
+        g_activeInstances.push_back(instance);
     }
 }
