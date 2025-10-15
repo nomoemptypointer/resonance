@@ -31,11 +31,14 @@ namespace Resonance {
         if (!data || size == 0)
             return false;
 
-        // For now, we assume the data is raw float32 PCM.
-        // TODO: Add a format parameter later.
-        size_t sampleCount = size / sizeof(float);
+        // Assume data is raw int16_t PCM
+        size_t sampleCount = size / sizeof(int16_t);
         m_buffer.resize(sampleCount);
-        std::memcpy(m_buffer.data(), data, size);
+
+        // Copy the data and convert to float internally if m_buffer is float
+        for (size_t i = 0; i < sampleCount; ++i) {
+            m_buffer[i] = static_cast<float>(static_cast<const int16_t*>(data)[i]) / 32768.0f;
+        }
 
         m_channels = channels;
         m_frequency = frequency;

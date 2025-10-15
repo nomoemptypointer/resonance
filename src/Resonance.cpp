@@ -49,22 +49,36 @@ namespace Resonance {
                     continue;
 
                 uint32_t pos = s->m_position;
-                if (pos >= s->GetLength()) {
+                uint32_t channels = s->GetChannels();
+                uint32_t length = s->GetLength();
+
+                if (pos >= length) {
                     s->Stop();
                     continue;
                 }
 
-                float sample = s->m_buffer[pos * s->GetChannels()]; // assume mono for now
+                float sampleL = 0.0f;
+                float sampleR = 0.0f;
 
-                // Apply panning
-                float pan = s->GetPan(); // -1 = left, 0 = center, 1 = right
+                if (channels == 1) {
+                    float sample = s->m_buffer[pos];
+                    sampleL = sampleR = sample;
+                } else if (channels >= 2) {
+                    sampleL = s->m_buffer[pos * channels + 0];
+                    sampleR = s->m_buffer[pos * channels + 1];
+                }
+
+                // Apply volume
+                sampleL *= s->GetVolume();
+                sampleR *= s->GetVolume();
+
+                // Apply panning (-1 = left, 0 = center, 1 = right)
+                float pan = s->GetPan();
                 float lGain = (pan <= 0) ? 1.0f : 1.0f - pan;
                 float rGain = (pan >= 0) ? 1.0f : 1.0f + pan;
 
-                sample *= s->GetVolume();
-
-                left  += sample * lGain;
-                right += sample * rGain;
+                left  += sampleL * lGain;
+                right += sampleR * rGain;
 
                 s->m_position++;
             }
@@ -76,7 +90,7 @@ namespace Resonance {
             if (g_channels == 2) {
                 buffer[i * 2 + 0] = left;
                 buffer[i * 2 + 1] = right;
-            } else {
+            } else { // mono output
                 buffer[i] = (left + right) * 0.5f;
             }
         }

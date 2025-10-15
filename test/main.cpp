@@ -60,10 +60,9 @@ int main() {
 
     SDL_ResumeAudioStreamDevice(stream);
 
-    // --- Load raw PCM float32 file ---
-    std::ifstream file("pluck.ieee", std::ios::binary | std::ios::ate);
+    std::ifstream file("c5.pcm", std::ios::binary | std::ios::ate);
     if (!file) {
-        std::cerr << "Failed to open pluck.ieee\n";
+        std::cerr << "Failed to open c5.pcm\n";
         return 1;
     }
 
@@ -71,15 +70,16 @@ int main() {
     std::streamsize size = file.tellg();
     file.seekg(0, std::ios::beg);
 
-    // Read file into vector
-    std::vector<float> buffer(size / sizeof(float));
+    // Read file as int16_t
+    std::vector<int16_t> buffer(size / sizeof(int16_t));
     if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) {
         std::cerr << "Failed to read file data\n";
         return 1;
     }
 
     Resonance::Sound sound;
-    if (!sound.LoadFromMemory(buffer.data(), buffer.size() * sizeof(float), 1, 48000)) {
+    // Pass raw int16_t data directly
+    if (!sound.LoadFromMemory(buffer.data(), buffer.size() * sizeof(int16_t), 1, 48000)) {
         std::cerr << "Failed to load sound\n";
         return 1;
     }
@@ -92,8 +92,8 @@ int main() {
     std::cout << "Press Ctrl+C to stop.\n";
 
     while (running) {
-        SDL_Delay(2500);
         sound.Play();
+        SDL_Delay(500);
     }
 
     std::cout << "\nStopping audio...\n";
